@@ -1,0 +1,46 @@
+import asyncio
+import threading
+import time
+
+import uvicorn
+
+from fastapi import FastAPI
+from API.gebruiker.gebruiker_controller import gebruiker_router
+from API.oproep import oproep_repository
+from API.oproep.oproep_controller import oproep_router
+from API.slagboom.slagboom_controller import slagboom_router
+from Telefoon import basisbel
+
+tags_metadata = [
+    {
+        "name": "Oproep",
+        "description": "Alle endpoints voor de oproepen",
+    },
+    {
+        "name": "Gebruiker",
+        "description": "Alle endpoints voor de gebruikers",
+    },
+    {
+        "name": "Slagboom",
+        "description": "Alle endpoints voor de slagboom",
+    }]
+
+app = FastAPI(openapi_tags=tags_metadata)
+
+app.include_router(gebruiker_router, prefix="/restservices")
+app.include_router(oproep_router, prefix="/restservices")
+app.include_router(slagboom_router, prefix="/restservices")
+
+
+class BackgroundTasks(threading.Thread):
+    def run(self, *args, **kwargs):
+        while True:
+            basisbel.start()
+
+
+if __name__ == '__main__':
+    t = BackgroundTasks()
+    t.start()
+
+    uvicorn.run('main:app', host="0.0.0.0", port=8000, reload=True)
+
