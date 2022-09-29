@@ -44,3 +44,4 @@ async def clear_notifications(gebruiker: Gebruiker):
         push_type=PushType.ALERT
     )
     await apns_client.send_notification(request)
+

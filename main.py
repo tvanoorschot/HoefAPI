@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import time
+from syncer import sync
 
 import uvicorn
 
@@ -33,9 +34,15 @@ app.include_router(slagboom_router, prefix="/restservices")
 
 
 class BackgroundTasks(threading.Thread):
+
     def run(self, *args, **kwargs):
         while True:
-            basisbel.start()
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            loop.run_until_complete(basisbel.start())
+            time.sleep(1)
+            loop.close()
 
 
 if __name__ == '__main__':
@@ -43,4 +50,3 @@ if __name__ == '__main__':
     t.start()
 
     uvicorn.run('main:app', host="0.0.0.0", port=8000, reload=True)
-

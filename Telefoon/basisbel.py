@@ -7,7 +7,7 @@ from API.oproep.oproep_repository import *
 from Telefoon import telefoon, cam, audio
 
 
-def start():
+async def start():
     try:
         wait_seconds = 60
 
@@ -17,11 +17,11 @@ def start():
 
             for gebruiker in get_all_gebruikers():
                 if gebruiker.token is not None:
-                    apns.send_oproep_notification(gebruiker)
+                    await apns.send_oproep_notification(gebruiker)
 
             telefoon.openemen()
 
-            audio.play("welkom", True)
+            audio.play(sound="welkom", wait=True)
 
             date_now = datetime.now().strftime('%Y-%m-%d %H:%M')
             # picture_url = cam.take_picture(date_now)
@@ -29,7 +29,7 @@ def start():
             oproep = save_oproep(Oproep(time=date_now, picture=""))
             oproep_id = oproep.id
 
-            player = audio.play("wachtmuziek", False)
+            player = audio.play(sound="wachtmuziek", wait=False)
 
             while True:
                 oproep = select_oproep(oproep_id)
@@ -40,10 +40,10 @@ def start():
 
                     for gebruiker in get_all_gebruikers():
                         if gebruiker.token is not None:
-                            apns.clear_notifications(gebruiker)
+                            await apns.clear_notifications(gebruiker)
 
                     player.stop()
-                    audio.play("geen_reactie", True)
+                    audio.play(sound="geen_reactie", wait=True)
                     telefoon.ophangen()
                     break
                 else:
@@ -53,8 +53,8 @@ def start():
                     if oproep.reactie is not None:
                         player.stop()
                         if oproep.reactie == "Ik kom er aan":
-                            audio.play("kom_er_aan", True)
-                            telefoon.ophangen()
+                            audio.play(sound="kom_er_aan", wait=True)
+                        telefoon.ophangen()
                         break
                     time.sleep(1)
                     wait_seconds -= 1

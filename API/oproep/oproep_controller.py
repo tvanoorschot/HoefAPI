@@ -1,7 +1,4 @@
-import asyncio
-import json
-import time
-from typing import List, Dict
+from typing import List
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -10,7 +7,6 @@ from API import apns
 from API.oproep.oproep_repository import *
 from API.oproep.oproep import *
 from API.gebruiker.gebruiker_repository import *
-from Telefoon import audio, telefoon
 
 oproep_router = APIRouter(prefix="/oproep")
 
