@@ -99,3 +99,24 @@ def get_all_oproepen():
                     reactie=oproep.reactie))
 
         return oproepen_dtos
+
+
+def get_all_closed_oproepen():
+    with Session(engine) as session:
+        oproepen_dtos = []
+
+        statement = select(Oproep).order_by(Oproep.id.desc()).limit(25)
+        oproepen = session.exec(statement).all()
+
+        for oproep in oproepen:
+            statement = select(Gebruiker).where(Gebruiker.id == oproep.opnemer_id)
+            opnemer = session.exec(statement).first()
+            if opnemer is not None and oproep.reactie is not None:
+                oproepen_dtos.append(OproepDTO(
+                    id=oproep.id,
+                    opnemer=opnemer.naam,
+                    time=oproep.time,
+                    picture=oproep.picture,
+                    reactie=oproep.reactie))
+
+        return oproepen_dtos

@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="basishoef@192.168.86.245" uuid="605fdb12-da43-41a4-b789-c3246d375062">
+    <data-source source="LOCAL" name="Basishoef" uuid="605fdb12-da43-41a4-b789-c3246d375062">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://192.168.86.245:5432/basishoef</jdbc-url>
+      <jdbc-url>jdbc:postgresql://192.168.1.235:5432/basishoef</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+    <data-source source="LOCAL" name="Basishoef Development" uuid="ec4f0ec7-159f-448b-92ab-6180d14a7b07">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://192.168.1.235:5432/basishoefdev</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

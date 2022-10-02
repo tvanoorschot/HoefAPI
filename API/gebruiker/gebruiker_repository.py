@@ -1,26 +1,33 @@
+import string
+from random import random
+
 from sqlmodel import Session, select
 
 from API.db import engine
 from API.gebruiker.gebruiker import Gebruiker, GebruikerDTO
 
 
-def get_all_gebruikers():
+def update_kamer(gebruiker_id, kamer):
     with Session(engine) as session:
-        statement = select(Gebruiker)
-        result = session.exec(statement).all()
-        return result
-
-
-def get_gebruiker_by_kamer(kamer):
-    with Session(engine) as session:
-        statement = select(Gebruiker).where(Gebruiker.kamer == kamer)
+        statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
         gebruiker = session.exec(statement).first()
-        return GebruikerDTO(naam=gebruiker.naam, kamer=gebruiker.kamer, id=gebruiker.id, token=gebruiker.token)
+        if gebruiker is not None:
+            gebruiker.kamer = kamer
+            session.commit()
 
 
-def get_gebruiker_by_id(id):
+def update_naam(gebruiker_id, naam):
     with Session(engine) as session:
-        statement = select(Gebruiker).where(Gebruiker.id == id)
+        statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
+        gebruiker = session.exec(statement).first()
+        if gebruiker is not None:
+            gebruiker.naam = naam
+            session.commit()
+
+
+def get_gebruiker_by_key(api_key):
+    with Session(engine) as session:
+        statement = select(Gebruiker).where(Gebruiker.api_key == api_key)
         result = session.exec(statement).first()
         return result
 
@@ -34,12 +41,24 @@ def authenticate(naam, kamer, token):
                 if gebruiker.token != token:
                     gebruiker.token = token
                     session.commit()
-                return GebruikerDTO(naam=gebruiker.naam, kamer=gebruiker.kamer, id=gebruiker.id, token=gebruiker.token)
+                return gebruiker.api_key
             else:
                 return None
         else:
-            gebruiker = Gebruiker(naam=naam, kamer=kamer, token=token)
+            gebruiker = Gebruiker(naam=naam, kamer=kamer, token=token, api_key=generate_password())
             session.add(gebruiker)
             session.commit()
-            session.refresh(gebruiker)
-            return GebruikerDTO(naam=gebruiker.naam, kamer=gebruiker.kamer, id=gebruiker.id, token=gebruiker.token)
+            return gebruiker.api_key
+
+
+def get_all_gebruikers():
+    with Session(engine) as session:
+        statement = select(Gebruiker)
+        result = session.exec(statement).all()
+        return result
+
+
+def generate_password():
+    characters = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(random.choice(characters) for i in range(11))
+    return password

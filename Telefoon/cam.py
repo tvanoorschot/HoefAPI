@@ -10,13 +10,20 @@ picture_folder = '/var/www/images.basishoef.nl/public_html'
 
 
 def take_picture(date):
-    capture()
-    time.sleep(2.5)
-    return picture_url + get_picture(date)
+    try:
+        capture()
+        return get_picture(date)
+    except requests.exceptions.ConnectionError:
+        return picture_url + "/no_cam.jpg"
 
 
 def capture():
     requests.get(base_url + '/capture')
+    time.sleep(1)
+    while True:
+        if requests.get(base_url + '/check').text == 'false':
+            break
+        time.sleep(0.2)
 
 
 def get_picture(date):
@@ -25,4 +32,4 @@ def get_picture(date):
     local_picture = picture_folder + picture_name
 
     urllib.request.urlretrieve(server_picture, local_picture)
-    return picture_name
+    return picture_url + picture_name

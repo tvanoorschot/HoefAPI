@@ -7,7 +7,7 @@ import vlc
 
 
 base_folder = 'Telefoon/sounds'
-min_peak = 200
+min_peak = 300
 
 
 def play(sound, wait):

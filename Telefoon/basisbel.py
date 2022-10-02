@@ -1,32 +1,63 @@
+from typing import Callable
+
+import sounddevice  # niet verwijderen, anders werkt niks meer
+import asyncio
+import threading
 import time
 from datetime import datetime
-
 from API import apns
 from API.gebruiker.gebruiker_repository import get_all_gebruikers
 from API.oproep.oproep_repository import *
 from Telefoon import telefoon, cam, audio
 
 
+class PlayWelkomSound(threading.Thread):
+
+    def run(self, *args, **kwargs):
+        audio.play(sound="welkom", wait=True)
+
+
+class SendNotifications(threading.Thread):
+
+    def run(self, *args, **kwargs):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        loop.run_until_complete(apns.send_oproep_notification())
+        time.sleep(1)
+        loop.close()
+
+
+class SendSecondNotifications(threading.Thread):
+
+    def run(self, *args, **kwargs):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        loop.run_until_complete(apns.send_second_oproep_notification())
+        time.sleep(1)
+        loop.close()
+
+
 async def start():
     try:
         wait_seconds = 60
 
-        # if audio.listen():
-        if True:
+        if audio.listen():
             print("Aangebeld")
-
-            for gebruiker in get_all_gebruikers():
-                if gebruiker.token is not None:
-                    await apns.send_oproep_notification(gebruiker)
+            play_welkom_sound = PlayWelkomSound()
+            send_notification_task = SendNotifications()
 
             telefoon.openemen()
-
-            audio.play(sound="welkom", wait=True)
+            play_welkom_sound.start()
+            send_notification_task.start()
 
             date_now = datetime.now().strftime('%Y-%m-%d %H:%M')
-            # picture_url = cam.take_picture(date_now)
+            picture_url = cam.take_picture(date_now)
+            oproep = save_oproep(Oproep(time=date_now, picture=picture_url))
 
-            oproep = save_oproep(Oproep(time=date_now, picture=""))
+            play_welkom_sound.join()
+            send_notification_task.join()
             oproep_id = oproep.id
 
             player = audio.play(sound="wachtmuziek", wait=False)
@@ -37,24 +68,22 @@ async def start():
                     oproep_opnemen(id=oproep_id, opnemer_id=1)
                     oproep_reageren(id=oproep_id, reactie="Geen reactie ontvangen")
                     print("Geen reactie ontvangen")
-
-                    for gebruiker in get_all_gebruikers():
-                        if gebruiker.token is not None:
-                            await apns.clear_notifications(gebruiker)
-
                     player.stop()
                     audio.play(sound="geen_reactie", wait=True)
                     telefoon.ophangen()
+                    await apns.clear_notifications()
                     break
                 else:
-                    if wait_seconds == 15 or wait_seconds == 30 or wait_seconds == 45 or wait_seconds == 60:
-                        print(wait_seconds)
+                    if wait_seconds == 30:
+                        send_second_notification_task = SendSecondNotifications()
+                        send_second_notification_task.start()
 
                     if oproep.reactie is not None:
                         player.stop()
                         if oproep.reactie == "Ik kom er aan":
                             audio.play(sound="kom_er_aan", wait=True)
                         telefoon.ophangen()
+                        await apns.clear_notifications()
                         break
                     time.sleep(1)
                     wait_seconds -= 1

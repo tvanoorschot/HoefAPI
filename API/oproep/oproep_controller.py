@@ -1,12 +1,15 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi.openapi.models import APIKey
 from pydantic import BaseModel
 
-from API import apns
+from API import apns, security
 from API.oproep.oproep_repository import *
 from API.oproep.oproep import *
 from API.gebruiker.gebruiker_repository import *
+from API.security import auth_gebruiker
+from Telefoon import telefoon
 
 oproep_router = APIRouter(prefix="/oproep")
 
@@ -15,40 +18,40 @@ class Oproepen(BaseModel):
     oproepen: List[OproepDTO]
 
 
-@oproep_router.post("", tags=["Test"])
-async def bel_aan(time: str, picture: str):
-    oproep = Oproep(time=time, picture=picture)
-    save_oproep(oproep)
-
-    for gebruiker in get_all_gebruikers():
-        if gebruiker.token is not None:
-            await apns.send_oproep_notification(gebruiker)
-
-    return {"message": "Oproep is aangemaakt"}
-
-
 @oproep_router.get("", response_model=Optional[OproepDTO], tags=["Oproep"])
-async def get_open_oproep():
+async def get_open_oproep(api_key: APIKey = Depends(security.get_api_key)):
+    gebruiker = auth_gebruiker(api_key)
     return select_open_oproep()
 
 
 @oproep_router.get("/all", response_model=Oproepen, tags=["Oproep"], response_model_exclude_unset=True)
-async def get_all():
-    return Oproepen(oproepen=get_all_oproepen())
+async def get_all_gesloten_oproepen(api_key: APIKey = Depends(security.get_api_key)):
+    gebruiker = auth_gebruiker(api_key)
+
+    oproepen = get_all_closed_oproepen()
+
+    return Oproepen(oproepen=oproepen)
 
 
-@oproep_router.post("/{id}/{gebruiker_id}", tags=["Oproep"])
-async def neem_op(id: int, gebruiker_id: int):
-    oproep_opnemen(id, gebruiker_id)
+@oproep_router.post("/{id}", tags=["Oproep"])
+async def neem_oproep_op(id: int, api_key: APIKey = Depends(security.get_api_key)):
+    gebruiker = auth_gebruiker(api_key)
 
-    for gebruiker in get_all_gebruikers():
-        if gebruiker.token is not None:
-            await apns.clear_notifications(gebruiker)
+    oproep_opnemen(id, gebruiker.id)
+
+    await apns.clear_notifications()
 
     return {"message": "Oproep is opgenomen"}
 
 
-@oproep_router.post("/{id}", tags=["Oproep"])
-async def reageer(id: int, reactie: ReactieDTO):
+@oproep_router.post("/{id}/reactie", tags=["Oproep"])
+async def reageer(id: int, reactie: ReactieDTO,
+                  api_key: APIKey = Depends(security.get_api_key)):
+    gebruiker = auth_gebruiker(api_key)
+
     oproep_reageren(id, reactie.tekst)
+
+    if reactie.slagboom:
+        telefoon.open_slagboom()
+
     return {"message": "Reactie is aangemaakt"}
