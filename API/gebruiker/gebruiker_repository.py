@@ -1,5 +1,5 @@
 import string
-from random import random
+import random
 
 from sqlmodel import Session, select
 
@@ -9,11 +9,16 @@ from API.gebruiker.gebruiker import Gebruiker, GebruikerDTO
 
 def update_kamer(gebruiker_id, kamer):
     with Session(engine) as session:
-        statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
-        gebruiker = session.exec(statement).first()
-        if gebruiker is not None:
-            gebruiker.kamer = kamer
-            session.commit()
+        statement = select(Gebruiker).where(Gebruiker.kamer == kamer)
+        kamer_gebruiker = session.exec(statement).first()
+        if kamer_gebruiker is None:
+            statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
+            gebruiker = session.exec(statement).first()
+            if gebruiker is not None:
+                gebruiker.kamer = kamer
+                session.commit()
+                return True
+        return False
 
 
 def update_naam(gebruiker_id, naam):
@@ -40,6 +45,7 @@ def authenticate(naam, kamer, token):
             if gebruiker.naam == naam:
                 if gebruiker.token != token:
                     gebruiker.token = token
+                    gebruiker.api_key = generate_password()
                     session.commit()
                 return gebruiker.api_key
             else:

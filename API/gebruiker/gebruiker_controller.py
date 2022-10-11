@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.openapi.models import APIKey
 
 from API import security
@@ -11,6 +11,8 @@ gebruiker_router = APIRouter(prefix="/gebruiker")
 @gebruiker_router.post("", tags=["Login"])
 async def authenticatie_gebruiker(gebruiker: GebruikerDTO):
     key = authenticate(gebruiker.naam, gebruiker.kamer, gebruiker.token)
+    if key is None:
+        raise HTTPException(status_code=401, detail="Gebruiker naam en/of kamer niet correct")
     return {"key": key}
 
 
@@ -32,5 +34,6 @@ async def update_naam_gebruiker(naam: str,
 async def update_kamer_gebruiker(kamer: str,
                                  api_key: APIKey = Depends(security.get_api_key)):
     gebruiker = auth_gebruiker(api_key)
-    update_kamer(gebruiker.id, kamer)
+    if update_kamer(gebruiker.id, kamer):
+        raise HTTPException(status_code=409, detail="Kamer is al bezet")
     return {"message": "Kamer is aangepast"}

@@ -82,6 +82,10 @@ async def start():
                         player.stop()
                         if oproep.reactie == "Ik kom er aan":
                             audio.play(sound="kom_er_aan", wait=True)
+                        if oproep.reactie == "Ik ben er":
+                            audio.play(sound="ben_er", wait=True)
+                        if oproep.reactie == "Ik kom er niet aan":
+                            audio.play(sound="kom_er_niet_aan", wait=True)
                         telefoon.ophangen()
                         await apns.clear_notifications()
                         break
