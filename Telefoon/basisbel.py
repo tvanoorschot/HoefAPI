@@ -1,4 +1,3 @@
-from typing import Callable
 
 import sounddevice  # niet verwijderen, anders werkt niks meer
 import asyncio
@@ -6,7 +5,6 @@ import threading
 import time
 from datetime import datetime
 from API import apns
-from API.gebruiker.gebruiker_repository import get_all_gebruikers
 from API.oproep.oproep_repository import *
 from Telefoon import telefoon, cam, audio
 
