@@ -1,7 +1,7 @@
 import time
 import urllib.request
-import requests
 
+import requests
 
 base_url = "http://192.168.1.148:80"
 picture_url = 'https://images.basishoef.nl'

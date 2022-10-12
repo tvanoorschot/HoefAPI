@@ -1,9 +1,9 @@
-
 import sounddevice  # niet verwijderen, anders werkt niks meer
 import asyncio
 import threading
 import time
 from datetime import datetime
+
 from API import apns
 from API.oproep.oproep_repository import *
 from Telefoon import telefoon, cam, audio
@@ -52,7 +52,7 @@ async def start():
 
             date_now = datetime.now().strftime('%Y-%m-%d %H:%M')
             picture_url = cam.take_picture(date_now)
-            oproep = save_oproep(Oproep(time=date_now, picture=picture_url))
+            oproep = save_oproep(time=date_now, picture=picture_url)
 
             play_welkom_sound.join()
             send_notification_task.join()

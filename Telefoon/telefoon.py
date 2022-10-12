@@ -1,10 +1,9 @@
-import RPi.GPIO as GPIO
 import time
 
+import RPi.GPIO as GPIO
 
 hoorn_GPIO = 17
 slagboom_GPIO = 27
-
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)

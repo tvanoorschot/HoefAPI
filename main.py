@@ -1,19 +1,24 @@
 import asyncio
 import threading
 import time
+
 import uvicorn
-import settings
-
-from sqlmodel import SQLModel
 from fastapi import FastAPI
+from sqlmodel import SQLModel
 
+import settings
+from API import db
 from API.gebruiker.gebruiker_controller import gebruiker_router
 from API.oproep.oproep_controller import oproep_router
 from API.slagboom.slagboom_controller import slagboom_router
-from Telefoon import basisbel
 
+if not settings.development:
+    from Telefoon import basisbel
 
 tags_metadata = [
+    {
+        "name": "Test"
+    },
     {
         "name": "Login",
         "description": "De endpoint voor de login en registratie",
@@ -39,7 +44,7 @@ app = FastAPI(openapi_tags=tags_metadata,
               contact={
                   "name": "Thomas van Oorschot",
                   "email": "oorschot98@gmail.com",
-              },)
+              }, )
 
 app.include_router(gebruiker_router, prefix="/restservices")
 app.include_router(oproep_router, prefix="/restservices")
@@ -60,7 +65,7 @@ class BackgroundTasks(threading.Thread):
 
 
 if __name__ == '__main__':
-    # SQLModel.metadata.create_all(db.engine)
+    SQLModel.metadata.create_all(db.engine)
 
     if settings.development:
         uvicorn.run('main:app', host="0.0.0.0", port=8081, reload=True)

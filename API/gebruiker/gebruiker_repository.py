@@ -1,10 +1,10 @@
-import string
 import random
+import string
 
 from sqlmodel import Session, select
 
 from API.db import engine
-from API.gebruiker.gebruiker import Gebruiker, GebruikerDTO
+from API.gebruiker.gebruiker import Gebruiker
 
 
 def update_kamer(gebruiker_id, kamer):
@@ -28,6 +28,8 @@ def update_naam(gebruiker_id, naam):
         if gebruiker is not None:
             gebruiker.naam = naam
             session.commit()
+            return True
+        return False
 
 
 def get_gebruiker_by_key(api_key):

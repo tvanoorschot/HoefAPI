@@ -2,7 +2,7 @@ from sqlmodel import Session, select
 
 from API.db import engine
 from API.gebruiker.gebruiker import Gebruiker
-from API.oproep.oproep import Oproep, OproepDTO
+from API.oproep.oproep import Oproep
 
 
 def select_open_oproep():
@@ -10,17 +10,18 @@ def select_open_oproep():
         statement = select(Oproep).order_by(Oproep.id.desc()).limit(1)
         oproep = session.exec(statement).first()
 
-        if oproep.opnemer_id is not None:
+        if oproep is None:
             return None
-        else:
-            return OproepDTO(
-                id=oproep.id,
-                time=oproep.time,
-                picture=oproep.picture)
+
+        if oproep.opnemer_id is None:
+            return oproep
+
+        return None
 
 
-def save_oproep(oproep):
+def save_oproep(time, picture):
     with Session(engine) as session:
+        oproep = Oproep(time=time, picture=picture)
         session.add(oproep)
         session.commit()
         session.refresh(oproep)
@@ -30,25 +31,10 @@ def save_oproep(oproep):
 
 def select_oproep(oproep_id):
     with Session(engine) as session:
-        statement = select(Oproep).where(Oproep.id == oproep_id)
+        statement = select(Oproep).join(Gebruiker).where(Oproep.id == oproep_id)
         oproep = session.exec(statement).first()
 
-        statement = select(Gebruiker).where(Gebruiker.id == oproep.opnemer_id)
-        opnemer = session.exec(statement).first()
-        if opnemer is not None:
-            return OproepDTO(
-                id=oproep.id,
-                opnemer=opnemer.naam,
-                time=oproep.time,
-                picture=oproep.picture,
-                reactie=oproep.reactie)
-        else:
-            return OproepDTO(
-                id=oproep.id,
-                opnemer=None,
-                time=oproep.time,
-                picture=oproep.picture,
-                reactie=oproep.reactie)
+        return oproep
 
 
 def oproep_opnemen(id, opnemer_id):
@@ -56,12 +42,8 @@ def oproep_opnemen(id, opnemer_id):
         statement = select(Oproep).where(Oproep.id == id)
         oproep = session.exec(statement).first()
 
-        statement = select(Gebruiker).where(Gebruiker.id == opnemer_id)
-        opnemer = session.exec(statement).first()
-
-        oproep.opnemer_id = opnemer.id
+        oproep.opnemer_id = opnemer_id
         session.commit()
-        session.refresh(oproep)
 
 
 def oproep_reageren(id, reactie):
@@ -73,50 +55,12 @@ def oproep_reageren(id, reactie):
         session.commit()
 
 
-def get_all_oproepen():
-    with Session(engine) as session:
-        oproepen_dtos = []
-
-        statement = select(Oproep).order_by(Oproep.id.desc()).limit(25)
-        oproepen = session.exec(statement).all()
-
-        for oproep in oproepen:
-            statement = select(Gebruiker).where(Gebruiker.id == oproep.opnemer_id)
-            opnemer = session.exec(statement).first()
-            if opnemer is not None:
-                oproepen_dtos.append(OproepDTO(
-                    id=oproep.id,
-                    opnemer=opnemer.naam,
-                    time=oproep.time,
-                    picture=oproep.picture,
-                    reactie=oproep.reactie))
-            else:
-                oproepen_dtos.append(OproepDTO(
-                    id=oproep.id,
-                    opnemer=None,
-                    time=oproep.time,
-                    picture=oproep.picture,
-                    reactie=oproep.reactie))
-
-        return oproepen_dtos
-
-
 def get_all_closed_oproepen():
     with Session(engine) as session:
-        oproepen_dtos = []
 
-        statement = select(Oproep).order_by(Oproep.id.desc()).limit(25)
+        statement = select(Oproep).join(Gebruiker).order_by(Oproep.id.desc()).limit(25)
         oproepen = session.exec(statement).all()
 
         for oproep in oproepen:
-            statement = select(Gebruiker).where(Gebruiker.id == oproep.opnemer_id)
-            opnemer = session.exec(statement).first()
-            if opnemer is not None and oproep.reactie is not None:
-                oproepen_dtos.append(OproepDTO(
-                    id=oproep.id,
-                    opnemer=opnemer.naam,
-                    time=oproep.time,
-                    picture=oproep.picture,
-                    reactie=oproep.reactie))
-
-        return oproepen_dtos
+            if oproep.opnemer is not None and oproep.reactie is not None:
+                yield oproep
