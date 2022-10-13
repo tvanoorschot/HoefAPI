@@ -1,25 +1,24 @@
+from datetime import datetime
+
 from sqlmodel import Session, select
 
 from API.db import engine
 from API.gebruiker.gebruiker import Gebruiker
 from API.oproep.oproep import Oproep
+from Telefoon import cam
 
 
 def select_open_oproep():
     with Session(engine) as session:
-        statement = select(Oproep).order_by(Oproep.id.desc()).limit(1)
+        statement = select(Oproep).where(Oproep.opnemer_id == None).order_by(Oproep.id.desc()).limit(1)
         oproep = session.exec(statement).first()
 
-        if oproep is None:
-            return None
-
-        if oproep.opnemer_id is None:
-            return oproep
-
-        return None
+        return oproep
 
 
-def save_oproep(time, picture):
+def create_oproep():
+    time = datetime.now().strftime('%Y-%m-%d %H:%M')
+    picture = cam.take_picture(time)
     with Session(engine) as session:
         oproep = Oproep(time=time, picture=picture)
         session.add(oproep)

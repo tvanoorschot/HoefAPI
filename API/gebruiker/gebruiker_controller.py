@@ -11,9 +11,11 @@ gebruiker_router = APIRouter(prefix="/gebruiker")
 
 @gebruiker_router.post("", tags=["Login"])
 async def authenticatie_gebruiker(gebruiker: GebruikerCreate):
-    key = authenticate(gebruiker.naam, gebruiker.kamer, gebruiker.token)
-    if key is None:
+    gebruiker = authenticate(gebruiker.naam, gebruiker.kamer, gebruiker.token)
+
+    if gebruiker.api_key is None:
         raise HTTPException(status_code=401, detail="Gebruiker naam en/of kamer niet correct")
+
     return {"key": key}
 
 
@@ -28,16 +30,19 @@ async def get_gebruiker(api_key: APIKey = Depends(security.get_api_key)):
 async def update_naam_gebruiker(naam: str,
                                 api_key: APIKey = Depends(security.get_api_key)):
     gebruiker = auth_gebruiker(api_key)
-    if update_naam(gebruiker.id, naam):
-        return {"message": "Naam is aangepast"}
-    else:
+
+    if not update_naam(gebruiker.id, naam):
         raise HTTPException(status_code=400, detail="Gebruiker naam is niet aangepast")
+
+    return {"message": "Naam is aangepast"}
 
 
 @gebruiker_router.post("/kamer", tags=["Gebruiker"])
 async def update_kamer_gebruiker(kamer: str,
                                  api_key: APIKey = Depends(security.get_api_key)):
     gebruiker = auth_gebruiker(api_key)
-    if update_kamer(gebruiker.id, kamer):
+
+    if not update_kamer(gebruiker.id, kamer):
         raise HTTPException(status_code=409, detail="Kamer is al bezet")
+
     return {"message": "Kamer is aangepast"}

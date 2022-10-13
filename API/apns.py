@@ -1,66 +1,51 @@
-from uuid import uuid4
+import collections
 
-from aioapns import APNs, NotificationRequest, PushType
+from apns2.client import APNsClient
+from apns2.payload import Payload, PayloadAlert
 
 import settings
-from API.gebruiker.gebruiker_repository import get_all_gebruikers
+from API.gebruiker.gebruiker_repository import get_all_gebruikers_with_token
+
+topic = 'com.example.App'
+Notification = collections.namedtuple('Notification', ['token', 'payload'])
 
 
-async def send_oproep_notification():
-    for gebruiker in get_all_gebruikers():
-        if gebruiker.token is not None:
-            await send_notification({
-                "aps": {
-                    "alert": {
-                        "title": "DING DONG!!",
-                        "body": "Er heeft iemand aangebeld"
-                    },
-                    "interruption-level": "critical",
-                    "badge": 1,
-                    "sound": "bel.caf"
-                }
-            }, gebruiker)
+def send_clear_notifications():
+    payload = Payload(
+        badge=0,
+        custom={"priority": "10", "content-available": "1"})
+
+    send_notifications(payload, get_all_gebruikers_with_token())
 
 
-async def send_second_oproep_notification():
-    for gebruiker in get_all_gebruikers():
-        if gebruiker.token is not None:
-            await send_notification({
-                "aps": {
-                    "alert": {
-                        "title": "DING DONG!!",
-                        "body": "Nog 30 seconden om te reageren"
-                    },
-                    "interruption-level": "critical",
-                    "badge": 1,
-                    "sound": "bel.caf"
-                }
-            }, gebruiker)
+def send_second_oproep_notifications():
+    payload = Payload(
+        alert=PayloadAlert(title="DING DONG!!", body="Nog 30 seconden om te reageren"),
+        sound="bel.caf",
+        badge=1,
+        custom={"interruption-level": "critical"})
+
+    send_notifications(payload, get_all_gebruikers_with_token())
 
 
-async def clear_notifications():
-    for gebruiker in get_all_gebruikers():
-        if gebruiker.token is not None:
-            await send_notification({
-                "aps": {
-                    "content-available": 1,
-                    "badge": 0,
-                    "priority": 10
-                }
-            }, gebruiker)
+async def send_oproep_notifications():
+    payload = Payload(
+        alert=PayloadAlert(title="DING DONG!!", body="Er heeft iemand aangebeld"),
+        sound="bel.caf",
+        badge=1,
+        custom={"interruption-level": "critical"})
+
+    send_notifications(payload, get_all_gebruikers_with_token())
 
 
-async def send_notification(message, gebruiker):
+def send_notifications(payload, gebruikers):
     if settings.development:
-        apns_client = APNs(client_cert='resources/certs/pushcertdev.pem', use_sandbox=False)
+        client = APNsClient('resources/certs/pushcertdev.pem', use_sandbox=True, use_alternative_port=False)
     else:
-        apns_client = APNs(client_cert='resources/certs/pushcert.pem', use_sandbox=False)
+        client = APNsClient('resources/certs/pushcert.pem', use_sandbox=False, use_alternative_port=False)
 
-    request = NotificationRequest(
-        device_token=gebruiker.token,
-        message=message,
-        notification_id=str(uuid4()),  # optional
-        time_to_live=3,  # optional
-        push_type=PushType.ALERT
-    )
-    await apns_client.send_notification(request)
+    notifications = []
+    for gebruiker in gebruikers:
+        notifications.append(Notification(payload=payload, token=gebruiker.token))
+
+    client.send_notification_batch(notifications=notifications, topic=topic)

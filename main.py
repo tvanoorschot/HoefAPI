@@ -4,16 +4,12 @@ import time
 
 import uvicorn
 from fastapi import FastAPI
-from sqlmodel import SQLModel
 
 import settings
-from API import db
 from API.gebruiker.gebruiker_controller import gebruiker_router
 from API.oproep.oproep_controller import oproep_router
 from API.slagboom.slagboom_controller import slagboom_router
-
-if not settings.development:
-    from Telefoon import basisbel
+from Telefoon import basisbel
 
 tags_metadata = [
     {
@@ -65,7 +61,7 @@ class BackgroundTasks(threading.Thread):
 
 
 if __name__ == '__main__':
-    SQLModel.metadata.create_all(db.engine)
+    # SQLModel.metadata.create_all(db.engine)
 
     if settings.development:
         uvicorn.run('main:app', host="0.0.0.0", port=8081, reload=True)

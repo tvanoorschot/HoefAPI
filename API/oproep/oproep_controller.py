@@ -1,24 +1,23 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.openapi.models import APIKey
 
-import settings
 from API import apns, security
 from API.oproep.oproep import *
 from API.oproep.oproep_repository import *
 from API.security import auth_gebruiker
-
-if not settings.development:
-    from Telefoon import telefoon
+from Telefoon import telefoon
 
 oproep_router = APIRouter(prefix="/oproep")
 
 
 @oproep_router.get("", response_model=Optional[OproepRead], tags=["Oproep"])
 async def get_open_oproep(api_key: APIKey = Depends(security.get_api_key)):
-    gebruiker = auth_gebruiker(api_key)
+    auth_gebruiker(api_key)
+
     oproep = select_open_oproep()
+
+    if oproep is None:
+        raise HTTPException(status_code=404, detail="Geen oproep gevonden")
 
     return OproepRead(
         id=oproep.id,
@@ -28,7 +27,7 @@ async def get_open_oproep(api_key: APIKey = Depends(security.get_api_key)):
 
 @oproep_router.get("/all", response_model=Oproepen, tags=["Oproep"])
 async def get_all_gesloten_oproepen(api_key: APIKey = Depends(security.get_api_key)):
-    gebruiker = auth_gebruiker(api_key)
+    auth_gebruiker(api_key)
 
     oproepen = []
 
@@ -49,8 +48,7 @@ async def neem_oproep_op(id: int, api_key: APIKey = Depends(security.get_api_key
 
     oproep_opnemen(id, gebruiker.id)
 
-    if not settings.development:
-        await apns.clear_notifications()
+    await apns.send_clear_notifications()
 
     return {"message": "Oproep is opgenomen"}
 
@@ -58,23 +56,22 @@ async def neem_oproep_op(id: int, api_key: APIKey = Depends(security.get_api_key
 @oproep_router.post("/{id}/reactie", tags=["Oproep"])
 async def reageer(id: int, reactie: Reactie,
                   api_key: APIKey = Depends(security.get_api_key)):
-    gebruiker = auth_gebruiker(api_key)
+    auth_gebruiker(api_key)
 
     oproep_reageren(id, reactie.tekst)
 
-    if not settings.development:
-        if reactie.slagboom:
-            telefoon.open_slagboom()
+    if reactie.slagboom:
+        telefoon.open_slagboom()
 
     return {"message": "Reactie is aangemaakt"}
 
 
 @oproep_router.get("/belaan", tags=["Test"])
 async def aanbellen(api_key: APIKey = Depends(security.get_api_key)):
-    gebruiker = auth_gebruiker(api_key)
+    auth_gebruiker(api_key)
 
-    date_now = datetime.now().strftime('%Y-%m-%d %H:%M')
-    picture_url = "https://images.basishoef.nl/no_cam.jpg"
-    save_oproep(time=date_now, picture=picture_url)
+    create_oproep()
+
+    await apns.send_oproep_notifications()
 
     return {"message": "Oproep aangemaakt"}

@@ -10,58 +10,70 @@ from API.gebruiker.gebruiker import Gebruiker
 def update_kamer(gebruiker_id, kamer):
     with Session(engine) as session:
         statement = select(Gebruiker).where(Gebruiker.kamer == kamer)
-        kamer_gebruiker = session.exec(statement).first()
-        if kamer_gebruiker is None:
-            statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
-            gebruiker = session.exec(statement).first()
-            if gebruiker is not None:
-                gebruiker.kamer = kamer
-                session.commit()
-                return True
-        return False
+        kamer_bezet = session.exec(statement).first() is not None
+
+        if kamer_bezet:
+            return False
+
+        statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
+        gebruiker = session.exec(statement).first()
+
+        gebruiker.kamer = kamer
+
+        session.commit()
+
+        return True
 
 
 def update_naam(gebruiker_id, naam):
     with Session(engine) as session:
         statement = select(Gebruiker).where(Gebruiker.id == gebruiker_id)
         gebruiker = session.exec(statement).first()
-        if gebruiker is not None:
-            gebruiker.naam = naam
-            session.commit()
-            return True
-        return False
+
+        gebruiker.naam = naam
+
+        session.commit()
+
+        return True
 
 
 def get_gebruiker_by_key(api_key):
     with Session(engine) as session:
         statement = select(Gebruiker).where(Gebruiker.api_key == api_key)
-        result = session.exec(statement).first()
-        return result
+        gebruiker = session.exec(statement).first()
+
+        return gebruiker
 
 
 def authenticate(naam, kamer, token):
     with Session(engine) as session:
-        statement = select(Gebruiker).where(Gebruiker.kamer == kamer)
+        statement = select(Gebruiker).where(Gebruiker.kamer == kamer and Gebruiker.naam == naam)
         gebruiker = session.exec(statement).first()
-        if gebruiker is not None:
-            if gebruiker.naam == naam:
-                if gebruiker.token != token:
-                    gebruiker.token = token
-                    gebruiker.api_key = generate_password()
-                    session.commit()
-                return gebruiker.api_key
-            else:
-                return None
-        else:
+
+        if gebruiker is None:
             gebruiker = Gebruiker(naam=naam, kamer=kamer, token=token, api_key=generate_password())
             session.add(gebruiker)
             session.commit()
-            return gebruiker.api_key
+            return gebruiker
+
+        if gebruiker.token != token:
+            gebruiker.token = token
+            gebruiker.api_key = generate_password()
+            session.commit()
+
+        return gebruiker
 
 
 def get_all_gebruikers():
     with Session(engine) as session:
         statement = select(Gebruiker)
+        result = session.exec(statement).all()
+        return result
+
+
+def get_all_gebruikers_with_token():
+    with Session(engine) as session:
+        statement = select(Gebruiker).where(Gebruiker.token != None)
         result = session.exec(statement).all()
         return result
 

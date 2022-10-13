@@ -1,29 +1,35 @@
 import time
 
-import RPi.GPIO as GPIO
+import settings
 
-hoorn_GPIO = 17
-slagboom_GPIO = 27
+if not settings.development:
+    import RPi.GPIO as GPIO
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
+    hoorn_GPIO = 17
+    slagboom_GPIO = 27
 
-GPIO.setup(27, GPIO.OUT)
-GPIO.output(27, GPIO.LOW)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
 
-GPIO.setup(17, GPIO.OUT)
-GPIO.output(17, GPIO.HIGH)
+    GPIO.setup(27, GPIO.OUT)
+    GPIO.output(27, GPIO.LOW)
+
+    GPIO.setup(17, GPIO.OUT)
+    GPIO.output(17, GPIO.HIGH)
 
 
 def openemen():
-    GPIO.output(hoorn_GPIO, GPIO.LOW)
+    if not settings.development:
+        GPIO.output(hoorn_GPIO, GPIO.LOW)
 
 
 def ophangen():
-    GPIO.output(hoorn_GPIO, GPIO.HIGH)
+    if not settings.development:
+        GPIO.output(hoorn_GPIO, GPIO.HIGH)
 
 
 def open_slagboom():
-    GPIO.output(slagboom_GPIO, GPIO.HIGH)
-    time.sleep(2)
-    GPIO.output(slagboom_GPIO, GPIO.LOW)
+    if not settings.development:
+        GPIO.output(slagboom_GPIO, GPIO.HIGH)
+        time.sleep(2)
+        GPIO.output(slagboom_GPIO, GPIO.LOW)

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 
@@ -14,4 +16,6 @@ def auth_gebruiker(api_key):
     gebruiker = get_gebruiker_by_key(api_key)
     if gebruiker is None:
         raise HTTPException(status_code=403, detail="Gebruiker key niet correct of absent")
+    else:
+        print("Gebruiker:   " + gebruiker.naam + "   -   Time:    " + str(datetime.now().strftime("%H:%M:%S")))
     return gebruiker
