@@ -6,11 +6,11 @@ from apns2.payload import Payload, PayloadAlert
 import settings
 from API.gebruiker.gebruiker_repository import get_all_gebruikers_with_token
 
-topic = 'com.example.App'
+topic = 'com.basishoef.deurbel'
 Notification = collections.namedtuple('Notification', ['token', 'payload'])
 
 
-def send_clear_notifications():
+async def send_clear_notifications():
     payload = Payload(
         badge=0,
         custom={"priority": "10", "content-available": "1"})
@@ -18,7 +18,7 @@ def send_clear_notifications():
     send_notifications(payload, get_all_gebruikers_with_token())
 
 
-def send_second_oproep_notifications():
+async def send_second_oproep_notifications():
     payload = Payload(
         alert=PayloadAlert(title="DING DONG!!", body="Nog 30 seconden om te reageren"),
         sound="bel.caf",
